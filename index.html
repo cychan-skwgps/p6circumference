@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>六年級數學：圓周的應用學習工具 － 陳俊諺老師製作</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden; /* Prevent scrolling, act like an app */
+            user-select: none; /* Prevent text selection while dragging */
+        }
+        
+        /* Custom scrollbar for left panel if it gets too long */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .snap-indicator {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0.2; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        /* 垂直分數樣式 */
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            font-size: 0.9em;
+            line-height: 1.2;
+            margin: 0 4px;
+        }
+        .frac .num {
+            border-bottom: 1.5px solid currentColor;
+            padding-bottom: 2px;
+            width: 100%;
+            text-align: center;
+        }
+        .frac .den {
+            padding-top: 2px;
+            text-align: center;
+        }
+
+        /* 隱藏 number input 的上下箭頭 */
+        .hide-arrows::-webkit-outer-spin-button,
+        .hide-arrows::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .hide-arrows {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex h-screen w-screen text-slate-800">
+
+    <!-- 左邊 25%：工具欄 -->
+    <div class="w-1/4 h-full bg-white shadow-[4px_0_24px_rgba(0,0,0,0.05)] z-10 flex flex-col border-r border-slate-200">
+        
+        <!-- Header -->
+        <div class="p-5 bg-indigo-600 text-white shadow-sm">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v9l6.36 6.36" />
+                </svg>
+                六年級數學：圓周的應用學習工具
+            </h1>
+            <p class="text-indigo-100 text-xs mt-1">設定資料並在右方探索圓形 － 陳俊諺老師製作</p>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto flex flex-col gap-6">
+            
+            <!-- 設定區域 -->
+            <div class="space-y-4">
+                <h2 class="font-bold text-slate-700 text-lg border-b pb-2">1. 設定圓形資料</h2>
+                
+                <!-- π 值選擇 (3.14 或 22/7) -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1.5">圓周率 (π) 設定</label>
+                    <div class="flex bg-slate-100 p-1.5 rounded-xl">
+                        <button id="btn-pi-314" class="flex-1 py-1.5 rounded-lg bg-white shadow text-sm font-bold text-indigo-600 border border-slate-200 transition-all" onclick="setPi('3.14')">π = 3.14</button>
+                        <button id="btn-pi-22_7" class="flex-1 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 transition-all flex items-center justify-center gap-1" onclick="setPi('22/7')">
+                            π = <span class="frac text-xs"><span class="num">22</span><span class="den">7</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 半徑 / 直徑 切換 -->
+                <div class="flex bg-slate-100 p-1.5 rounded-xl">
+                    <button id="btn-radius" class="flex-1 py-2 rounded-lg text-base font-medium text-slate-500 hover:text-slate-700 transition-all" onclick="setMode('radius')">半徑 (Radius)</button>
+                    <button id="btn-diameter" class="flex-1 py-2 rounded-lg bg-white shadow text-base font-bold text-indigo-600 border border-slate-200 transition-all" onclick="setMode('diameter')">直徑 (Diameter)</button>
+                </div>
+
+                <!-- 數值輸入 -->
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-base font-bold text-slate-700" id="label-length">直徑長度/直線長度</label>
+                        <select id="input-unit" class="text-base font-bold border border-slate-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 text-indigo-700 bg-white shadow-sm">
+                            <option value="cm">cm</option>
+                            <option value="m">m</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <!-- 中間輸入框 -->
+                        <div class="relative bg-white border-2 border-slate-300 rounded-xl overflow-hidden shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+                            <input type="number" id="input-length" value="5" step="0.01" class="w-full text-center py-3 text-4xl font-black text-indigo-700 outline-none m-0 hide-arrows bg-transparent">
+                            <span id="display-unit" class="text-slate-400 font-bold text-sm absolute bottom-2 right-3">cm</span>
+                        </div>
+                        
+                        <!-- 加減按鈕區 -->
+                        <div class="flex flex-col gap-2">
+                            <!-- 加法 (上) -->
+                            <div class="flex gap-2">
+                                <button onclick="adjustLength(1)" class="flex-1 bg-[#e6fcf0] text-[#008080] hover:bg-[#d1f5e0] py-2 rounded-md font-medium text-sm transition-colors shadow-sm">+1<span class="unit-text">cm</span></button>
+                                <button onclick="adjustLength(0.1)" class="flex-1 bg-[#e6fcf0] text-[#008080] hover:bg-[#d1f5e0] py-2 rounded-md font-medium text-sm transition-colors shadow-sm">+0.1<span class="unit-text">cm</span></button>
+                                <button onclick="adjustLength(0.01)" class="flex-1 bg-[#e6fcf0] text-[#008080] hover:bg-[#d1f5e0] py-2 rounded-md font-medium text-sm transition-colors shadow-sm">+0.01<span class="unit-text">cm</span></button>
+                            </div>
+                            <!-- 減法 (下) -->
+                            <div class="flex gap-2">
+                                <button onclick="adjustLength(-1)" class="flex-1 bg-[#ededed] text-[#1e3a8a] hover:bg-[#e2e2e2] py-2 rounded-md font-medium text-sm transition-colors shadow-sm">-1<span class="unit-text">cm</span></button>
+                                <button onclick="adjustLength(-0.1)" class="flex-1 bg-[#ededed] text-[#1e3a8a] hover:bg-[#e2e2e2] py-2 rounded-md font-medium text-sm transition-colors shadow-sm">-0.1<span class="unit-text">cm</span></button>
+                                <button onclick="adjustLength(-0.01)" class="flex-1 bg-[#ededed] text-[#1e3a8a] hover:bg-[#e2e2e2] py-2 rounded-md font-medium text-sm transition-colors shadow-sm">-0.01<span class="unit-text">cm</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 類型選擇 (圖案顯示) -->
+                <div>
+                    <label class="block text-base font-bold text-slate-700 mb-2">線段類型</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button id="type-full" onclick="setType('full')" class="type-btn border-2 border-indigo-500 bg-indigo-50 p-3 rounded-xl flex flex-col items-center gap-2 transition-all shadow-sm">
+                            <svg class="w-8 h-8 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+                            <span class="text-sm font-bold text-indigo-700">全個</span>
+                        </button>
+                        <button id="type-half" onclick="setType('half')" class="type-btn border-2 border-transparent bg-white shadow-sm hover:border-slate-300 p-3 rounded-xl flex flex-col items-center gap-2 transition-all">
+                            <svg class="w-8 h-8 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 A9 9 0 0 1 12 21 Z"/></svg>
+                            <span class="text-sm font-bold text-slate-600">半個</span>
+                        </button>
+                        <button id="type-quarter" onclick="setType('quarter')" class="type-btn border-2 border-transparent bg-white shadow-sm hover:border-slate-300 p-3 rounded-xl flex flex-col items-center gap-2 transition-all">
+                            <svg class="w-8 h-8 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12 L12 3 A9 9 0 0 1 21 12 Z"/></svg>
+                            <span class="text-sm font-bold text-slate-600">1/4</span>
+                        </button>
+                        <button id="type-fraction" onclick="setType('fraction')" class="type-btn border-2 border-transparent bg-white shadow-sm hover:border-slate-300 p-3 rounded-xl flex flex-col items-center gap-2 transition-all">
+                            <svg class="w-8 h-8 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"><circle cx="12" cy="12" r="9"/><path d="M12 12 L12 3" stroke-dasharray="none" /><path d="M12 12 L20.5 15" stroke-dasharray="none" /></svg>
+                            <span class="text-sm font-bold text-slate-600">自訂</span>
+                        </button>
+                        <button id="type-hline" onclick="setType('hline')" class="type-btn border-2 border-transparent bg-white shadow-sm hover:border-slate-300 p-3 rounded-xl flex flex-col items-center gap-2 transition-all">
+                            <svg class="w-8 h-8 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12" stroke-linecap="round"/></svg>
+                            <span class="text-sm font-bold text-slate-600">橫線</span>
+                        </button>
+                        <button id="type-vline" onclick="setType('vline')" class="type-btn border-2 border-transparent bg-white shadow-sm hover:border-slate-300 p-3 rounded-xl flex flex-col items-center gap-2 transition-all">
+                            <svg class="w-8 h-8 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="4" x2="12" y2="20" stroke-linecap="round"/></svg>
+                            <span class="text-sm font-bold text-slate-600">直線</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="input-type" value="full">
+                </div>
+
+                <!-- 分數輸入 (條件顯示) -->
+                <div id="fraction-inputs" class="hidden items-center justify-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <span class="text-base text-slate-700 font-bold">分數:</span>
+                    <div class="flex flex-col items-center gap-1.5">
+                        <!-- 分子 -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="adjustFraction('num', -1)" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full font-bold flex items-center justify-center transition-colors shadow-sm">-</button>
+                            <input type="number" id="input-num" value="1" min="1" class="w-14 text-center py-1 text-lg font-bold outline-none bg-white border border-slate-300 rounded-lg text-indigo-700 hide-arrows shadow-inner">
+                            <button onclick="adjustFraction('num', 1)" class="w-8 h-8 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-full font-bold flex items-center justify-center transition-colors shadow-sm">+</button>
+                        </div>
+                        <!-- 分數線 -->
+                        <div class="w-full border-t-2 border-slate-300 my-0.5"></div>
+                        <!-- 分母 -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="adjustFraction('den', -1)" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full font-bold flex items-center justify-center transition-colors shadow-sm">-</button>
+                            <input type="number" id="input-den" value="3" min="1" class="w-14 text-center py-1 text-lg font-bold outline-none bg-white border border-slate-300 rounded-lg text-indigo-700 hide-arrows shadow-inner">
+                            <button onclick="adjustFraction('den', 1)" class="w-8 h-8 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-full font-bold flex items-center justify-center transition-colors shadow-sm">+</button>
+                        </div>
+                    </div>
+                    <span class="text-base text-slate-700 font-bold">個</span>
+                </div>
+                
+                <!-- 新增：上載圖片轉化線段功能 -->
+                <div class="border-t border-slate-200 pt-4 mt-2">
+                    <label class="block text-base font-bold text-slate-700 mb-2 flex items-center justify-between">
+                        <span>2. 智能圖片幾何拆解（約30秒）（功能測試中）</span>
+                        <span class="text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">AI 幾何分析</span>
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    <button id="btn-upload-img" onclick="document.getElementById('image-upload').click()" class="w-full bg-slate-50 hover:bg-indigo-50 border-2 border-dashed border-slate-300 hover:border-indigo-400 text-slate-600 hover:text-indigo-600 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span id="upload-btn-text">上載／貼上 Ctrl+V 圖形圖片</span>
+                    </button>
+                    <!-- 新增：即時顯示剛貼上/上載的圖片預覽與狀態 -->
+                    <div id="upload-preview-box" class="hidden mt-2 p-2 bg-indigo-50/70 rounded-xl border border-indigo-100 flex items-center gap-3">
+                        <img id="upload-preview-img" src="" alt="預覽圖" class="w-12 h-12 object-contain bg-white rounded-lg border border-slate-200 shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <p id="upload-status-title" class="text-xs font-bold text-indigo-700 truncate">正在分析最新圖片...</p>
+                            <p id="upload-status-desc" class="text-[11px] text-slate-500 truncate">已自動壓縮以加快辨識速度</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">上載幾何圖（例如太極/S形弧線），AI 將自動分析並生成標準幾何線段組合。</p>
+                </div>
+
+                <!-- 產生按鈕 -->
+                <button onclick="generateShape()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg py-3 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 active:scale-95 transform transition-transform mt-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    產生線段
+                </button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="mt-auto pt-4 text-xs text-slate-400 border-t">
+                <ul class="list-disc pl-4 space-y-1">
+                    <li>拖曳右方圖形可移動位置</li>
+                    <li>圖形之間的中心和邊緣具有<strong class="text-indigo-400">磁吸</strong>功能，方便拼砌圖形。</li>
+                    <li>點擊圖形可查看周長並進行旋轉/刪除。</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 右邊 75%：繪圖區 -->
+    <div class="w-3/4 h-full relative overflow-hidden" id="canvas-container">
+        
+        <!-- 左上角功能按鍵群 -->
+        <div class="absolute top-6 left-6 z-20 flex flex-col gap-2">
+            <!-- 顯示各線段長度 -->
+            <button id="btn-show-segment-lengths" onclick="toggleSegmentLengths()" class="bg-white/90 backdrop-blur px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 text-slate-600 text-sm font-bold tracking-wide hover:bg-slate-50 transition-all flex items-center gap-2 cursor-pointer active:scale-95 transform">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h18M3 18h18M7 4v4M17 4v4M12 10v4" />
+                </svg>
+                顯示各線段長度
+            </button>
+
+            <!-- 全部刪除 -->
+            <button onclick="deleteAll()" class="bg-white/90 backdrop-blur px-4 py-2.5 rounded-xl shadow-sm border border-red-200 text-red-500 text-sm font-bold tracking-wide hover:bg-red-50 transition-all flex items-center gap-2 cursor-pointer active:scale-95 transform">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                全部刪除
+            </button>
+        </div>
+
+        <!-- 浮動資訊視窗 (Popup) -->
+        <div id="floating-popup" class="absolute hidden opacity-0 transition-opacity duration-200 z-30 pointer-events-none bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-slate-100 p-5 w-64 transform -translate-x-1/2 -translate-y-full mt-[-10px]">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <div id="popup-color" class="w-4 h-4 rounded-full"></div>
+                    <span class="font-bold text-slate-700 text-lg">圖形資料</span>
+                </div>
+                <button class="pointer-events-auto text-slate-400 hover:text-slate-600" onclick="selectShape(null)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="space-y-2 mb-4 text-sm">
+                <div id="popup-r-row" class="flex justify-between">
+                    <span class="text-slate-500">半徑 (r):</span>
+                    <span id="popup-r" class="font-bold text-slate-800"></span>
+                </div>
+                <div id="popup-d-row" class="flex justify-between">
+                    <span class="text-slate-500">直徑 (d):</span>
+                    <span id="popup-d" class="font-bold text-slate-800"></span>
+                </div>
+            </div>
+            <div class="mb-4">
+                <div id="popup-line-title" class="text-slate-500 text-sm mb-1">圓周線條長度:</div>
+                <div class="bg-indigo-50 text-indigo-700 font-bold p-3 rounded-lg text-center flex items-center justify-center flex-wrap gap-1" id="popup-formula">
+                </div>
+            </div>
+            <div class="flex gap-2 pointer-events-auto">
+                <button onclick="rotateSelected(-1)" class="flex-1 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                    左旋
+                </button>
+                <button onclick="rotateSelected(1)" class="flex-1 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path></svg>
+                    右旋
+                </button>
+                <button onclick="deleteSelected()" class="flex-1 py-2 bg-red-50 border border-red-200 rounded-lg text-sm font-bold text-red-500 hover:bg-red-100 flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    刪除
+                </button>
+            </div>
+        </div>
+
+        <!-- 畫布 SVG -->
+        <svg id="svg-area" class="w-full h-full cursor-grab active:cursor-grabbing bg-slate-50" style="touch-action: none;">
+            <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+                </pattern>
+            </defs>
+            <rect id="bg-rect" width="100%" height="100%" fill="url(#grid)" />
+            
+            <text id="watermark" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#cbd5e1" font-size="24" font-weight="bold" class="pointer-events-none select-none opacity-100 transition-opacity duration-300">
+                在左方設定數值並產生線段
+            </text>
+
+            <g id="viewport-group">
+                <g id="shapes-group"></g>
+                <circle id="snap-indicator" class="hidden snap-indicator pointer-events-none" r="8" fill="none" stroke="#3b82f6" stroke-width="3"/>
+            </g>
+        </svg>
+    </div>
+</body>
+<script>
+        const state = {
+            mode: 'radius', 
+            piMode: '3.14', 
+            shapes: [],
+            selectedId: null,
+            soundEnabled: true,
+            colorIndex: 0,
+            colors: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'],
+            showSegmentLengths: false
+        };
+
+        const ui = {
+            inputLength: document.getElementById('input-length'),
+            inputUnit: document.getElementById('input-unit'),
+            displayUnit: document.getElementById('display-unit'),
+            btnRadius: document.getElementById('btn-radius'),
+            btnDiameter: document.getElementById('btn-diameter'),
+            btnPi314: document.getElementById('btn-pi-314'),
+            btnPi22_7: document.getElementById('btn-pi-22_7'),
+            labelLength: document.getElementById('label-length'),
+            inputType: document.getElementById('input-type'),
+            fractionInputs: document.getElementById('fraction-inputs'),
+            inputNum: document.getElementById('input-num'),
+            inputDen: document.getElementById('input-den'),
+            svgArea: document.getElementById('svg-area'),
+            shapesGroup: document.getElementById('shapes-group'),
+            viewportGroup: document.getElementById('viewport-group'),
+            watermark: document.getElementById('watermark'),
+            snapIndicator: document.getElementById('snap-indicator'),
+            floatingPopup: document.getElementById('floating-popup'),
+            popupColor: document.getElementById('popup-color'),
+            popupR: document.getElementById('popup-r'),
+            popupD: document.getElementById('popup-d'),
+            popupFormula: document.getElementById('popup-formula')
+        };
+
+        const viewport = { x: 0, y: 0, scale: 1 };
+        const panState = { isPanning: false, startX: 0, startY: 0, initialVx: 0, initialVy: 0 };
+        const pinchState = { isPinching: false, initialDist: 0, initialScale: 1, centerX: 0, centerY: 0 };
+        const dragState = { isDragging: false, hasMoved: false, shapeId: null, offsetX: 0, offsetY: 0, startX: 0, startY: 0, wasSelected: false, popupWasVisible: false };
+
+        const SNAP_DISTANCE = 15;
+        let isToneInitialized = false;
+        let clickSynth, genSynth;
+
+        async function initTone() {
+            if (isToneInitialized) return;
+            await Tone.start();
+            clickSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+            genSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1 } }).toDestination();
+            genSynth.volume.value = -10;
+            isToneInitialized = true;
+        }
+
+        function getVisualRadius(r) {
+            return r * 40;
+        }
+
+        // 新增：處理鍵盤貼上圖片（確保抓取剪貼簿最新圖片）
+        function handlePasteImage(event) {
+            const clipboardData = event.clipboardData || (event.originalEvent && event.originalEvent.clipboardData);
+            if (!clipboardData) return;
+
+            let imageFile = null;
+            if (clipboardData.files && clipboardData.files.length > 0) {
+                for (let i = 0; i < clipboardData.files.length; i++) {
+                    if (clipboardData.files[i].type.startsWith('image/')) {
+                        imageFile = clipboardData.files[i];
+                        break;
+                    }
+                }
+            }
+            if (!imageFile && clipboardData.items) {
+                for (let i = 0; i < clipboardData.items.length; i++) {
+                    if (clipboardData.items[i].type.indexOf('image') !== -1) {
+                        imageFile = clipboardData.items[i].getAsFile();
+                        break;
+                    }
+                }
+            }
+
+            if (imageFile) {
+                event.preventDefault();
+                compressAndProcessImage(imageFile);
+            }
+        }
+
+        // 新增：處理圖片上載
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compressAndProcessImage(file);
+            event.target.value = ''; // Reset input 確保同一檔案可重複觸發
+        }
+
+        // 前端快速壓縮圖片（縮小至最大 600px，大幅提升 AI 傳輸與辨識速度）
+        function compressAndProcessImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rawDataUrl = e.target.result;
+                
+                // 立即顯示剛貼上的最新預覽圖
+                const previewBox = document.getElementById('upload-preview-box');
+                const previewImg = document.getElementById('upload-preview-img');
+                const statusTitle = document.getElementById('upload-status-title');
+                const statusDesc = document.getElementById('upload-status-desc');
+                
+                if (previewBox && previewImg) {
+                    previewImg.src = rawDataUrl;
+                    previewBox.classList.remove('hidden');
+                    statusTitle.innerText = "正在極速分析此圖片...";
+                    statusDesc.innerText = "辨識幾何線段與半徑中";
+                }
+
+                const img = new Image();
+                img.onload = function() {
+                    const maxDim = 200; // 極限壓縮：將 300 降至 200，大幅減少運算時間
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.3); // 極限壓縮比：降至 0.3
+                    analyzeAndGenerateGeometries(compressedDataUrl);
+                };
+                img.src = rawDataUrl;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // AI 智能分析圖像幾何結構並創建原生線段
+        async function analyzeAndGenerateGeometries(jpegDataUrl) {
+            playSound('gen');
+            const btnText = document.getElementById('upload-btn-text');
+            const statusTitle = document.getElementById('upload-status-title');
+            const statusDesc = document.getElementById('upload-status-desc');
+            if (btnText) btnText.innerText = "AI 快速分析中...";
+
+            try {
+                const base64Data = jpegDataUrl.replace(/^data:image\/\w+;base64,/, "");
+
+                // 極度精簡 Prompt 以減少 AI 閱讀 Token 的時間
+                const prompt = `拆解圖中實線為標準圓弧與直線。
+SVG座標:0度向右,順時針(+90下,180左,270上)。半圓順時針180度;1/4圓順時針90度。直線0度水平,90度垂直。
+讀出數字作半徑(若是直徑請除2)或長度。offsetX/Y為相對中心以第一個半徑為單位的偏移。`;
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: "image/jpeg",
+                                        data: base64Data
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    radius: { type: "NUMBER" },
+                                    fraction: { type: "NUMBER" },
+                                    isLine: { type: "BOOLEAN" },
+                                    lengthVal: { type: "NUMBER" },
+                                    offsetX: { type: "NUMBER" },
+                                    offsetY: { type: "NUMBER" },
+                                    rotation: { type: "NUMBER" }
+                                },
+                                required: ["radius", "fraction", "isLine", "lengthVal", "offsetX", "offsetY", "rotation"]
+                            }
+                        }
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API HTTP ${response.status}`);
+
+                const result = await response.json();
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (jsonText) {
+                    const parsedComponents = JSON.parse(jsonText);
+                    // 清空舊圖形，確保畫布只顯示最新貼上的圖片分析結果
+                    state.shapes = [];
+                    createNativeShapesFromAI(parsedComponents);
+                    if (statusTitle) statusTitle.innerText = `分析完成！已生成 ${parsedComponents.length} 條線段`;
+                    if (statusDesc) statusDesc.innerText = "可直接在右方拖曳或點擊查看算式";
+                } else {
+                    throw new Error("Empty AI response");
+                }
+            } catch (err) {
+                console.error("AI analysis error:", err);
+                if (statusTitle) statusTitle.innerText = "AI 辨識逾時或無法解析";
+                if (statusDesc) statusDesc.innerText = "請確認圖片清晰，或手動在上方建立線段";
+            } finally {
+                if (btnText) btnText.innerText = "上載／貼上 Ctrl+V 圖形圖片";
+            }
+        }
+
+        function playSound(type = 'click') {
+            if (!state.soundEnabled) return;
+            initTone().then(() => {
+                if (!isToneInitialized) return;
+                if (type === 'click') {
+                    clickSynth.triggerAttackRelease("G5", "32n");
+                } else if (type === 'gen') {
+                    genSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
+                } else if (type === 'delete') {
+                    clickSynth.triggerAttackRelease("C4", "16n");
+                }
+            }).catch(e => console.log("Audio play prevented", e));
+        }
+
+        // --- 初始化與事件綁定 ---
+        function init() {
+            ui.inputUnit.addEventListener('change', (e) => {
+                playSound('click');
+                const newUnit = e.target.value;
+                ui.displayUnit.innerText = newUnit;
+                document.querySelectorAll('.unit-text').forEach(el => {
+                    el.innerText = newUnit;
+                });
+            });
+
+            // 全域鍵盤剪貼簿貼上 (Paste) 監聽
+            window.addEventListener('paste', handlePasteImage);
+
+            // 滑鼠與觸控事件
+            ui.svgArea.addEventListener('mousedown', handlePointerDown);
+            window.addEventListener('mousemove', handlePointerMove);
+            window.addEventListener('mouseup', handlePointerUp);
+            
+            ui.svgArea.addEventListener('touchstart', handlePointerDown, {passive: false});
+            window.addEventListener('touchmove', handlePointerMove, {passive: false});
+            window.addEventListener('touchend', handlePointerUp);
+
+            // 滾輪縮放
+            ui.svgArea.addEventListener('wheel', handleWheel, {passive: false});
+            
+            // 點擊背景取消選擇
+            const bgRect = document.getElementById('bg-rect');
+            bgRect.addEventListener('mousedown', (e) => {
+                if (e.target === bgRect) selectShape(null);
+            });
+            bgRect.addEventListener('touchstart', (e) => {
+                if (e.target === bgRect) selectShape(null);
+            });
+
+            // 初始化畫布置中
+            const rect = ui.svgArea.getBoundingClientRect();
+            viewport.x = rect.width / 2;
+            viewport.y = rect.height / 2;
+            updateViewport();
+        }
+
+        // --- 畫布縮放與平移邏輯 ---
+        function updateViewport() {
+            ui.viewportGroup.setAttribute('transform', `translate(${viewport.x}, ${viewport.y}) scale(${viewport.scale})`);
+            
+            if (state.selectedId) {
+                const shape = state.shapes.find(s => s.id === state.selectedId);
+                if (shape) positionPopup(shape);
+            }
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const rect = ui.svgArea.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const zoomSpeed = 0.1;
+            const delta = e.deltaY < 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
+            
+            let newScale = viewport.scale * delta;
+            newScale = Math.max(0.3, Math.min(newScale, 4));
+
+            viewport.x = mouseX - (mouseX - viewport.x) * (newScale / viewport.scale);
+            viewport.y = mouseY - (mouseY - viewport.y) * (newScale / viewport.scale);
+            viewport.scale = newScale;
+
+            updateViewport();
+        }
+        
+        function getScreenToWorld(screenX, screenY) {
+            const rect = ui.svgArea.getBoundingClientRect();
+            return {
+                x: (screenX - rect.left - viewport.x) / viewport.scale,
+                y: (screenY - rect.top - viewport.y) / viewport.scale
+            };
+        }
+
+        // --- UI 控制邏輯 ---
+        function setType(type) {
+            playSound('click');
+            ui.inputType.value = type;
+            
+            const buttons = document.querySelectorAll('.type-btn');
+            buttons.forEach(btn => {
+                btn.className = "type-btn border-2 border-transparent bg-white shadow-sm hover:border-slate-300 p-3 rounded-xl flex flex-col items-center gap-2 transition-all";
+                btn.querySelector('svg').classList.remove('text-indigo-600');
+                btn.querySelector('svg').classList.add('text-slate-600');
+                btn.querySelector('span').classList.remove('text-indigo-700');
+                btn.querySelector('span').classList.add('text-slate-600');
+            });
+
+            const activeBtn = document.getElementById(`type-${type}`);
+            if (activeBtn) {
+                activeBtn.className = "type-btn border-2 border-indigo-500 bg-indigo-50 p-3 rounded-xl flex flex-col items-center gap-2 transition-all shadow-sm";
+                activeBtn.querySelector('svg').classList.remove('text-slate-600');
+                activeBtn.querySelector('svg').classList.add('text-indigo-600');
+                activeBtn.querySelector('span').classList.remove('text-slate-600');
+                activeBtn.querySelector('span').classList.add('text-indigo-700');
+            }
+
+            toggleFractionInputs();
+        }
+
+        function setMode(mode) {
+            playSound('click');
+            state.mode = mode;
+            if (mode === 'radius') {
+                ui.btnRadius.className = "flex-1 py-2 rounded-lg bg-white shadow text-base font-bold text-indigo-600 border border-slate-200 transition-all";
+                ui.btnDiameter.className = "flex-1 py-2 rounded-lg text-base font-medium text-slate-500 hover:text-slate-700 transition-all";
+                ui.labelLength.innerText = "半徑長度/直線長度";
+            } else {
+                ui.btnDiameter.className = "flex-1 py-2 rounded-lg bg-white shadow text-base font-bold text-indigo-600 border border-slate-200 transition-all";
+                ui.btnRadius.className = "flex-1 py-2 rounded-lg text-base font-medium text-slate-500 hover:text-slate-700 transition-all";
+                ui.labelLength.innerText = "直徑長度/直線長度";
+            }
+        }
+
+        function setPi(piVal) {
+            playSound('click');
+            state.piMode = piVal;
+            if (piVal === '3.14') {
+                ui.btnPi314.className = "flex-1 py-1.5 rounded-lg bg-white shadow text-sm font-bold text-indigo-600 border border-slate-200 transition-all";
+                ui.btnPi22_7.className = "flex-1 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 transition-all flex items-center justify-center gap-1";
+            } else {
+                ui.btnPi22_7.className = "flex-1 py-1.5 rounded-lg bg-white shadow text-sm font-bold text-indigo-600 border border-slate-200 transition-all flex items-center justify-center gap-1";
+                ui.btnPi314.className = "flex-1 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 transition-all";
+            }
+            updateFloatingPopup();
+            renderCanvas();
+        }
+
+        // --- 分數計算與格式化工具 ---
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b !== 0) {
+                let t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        // 計算 π = 22/7 時的精確分數結果 (回傳 HTML 格式與純文字格式)
+        function calculateExactFractionLength(d, num, den) {
+            // 將直徑 d (最多兩位小數) 轉為整數分數 dInt / dScale
+            const dScale = 100;
+            const dInt = Math.round(d * dScale);
+            
+            // 算式: (dInt / 100) * (22 / 7) * (num / den)
+            let totalNum = dInt * 22 * num;
+            let totalDen = dScale * 7 * den;
+            
+            const common = gcd(totalNum, totalDen);
+            totalNum /= common;
+            totalDen /= common;
+
+            if (totalDen === 1) {
+                return { html: `${totalNum}`, text: `${totalNum}` };
+            }
+
+            const whole = Math.floor(totalNum / totalDen);
+            const remNum = totalNum % totalDen;
+
+            if (whole === 0) {
+                return {
+                    html: `<span class="frac"><span class="num">${remNum}</span><span class="den">${totalDen}</span></span>`,
+                    text: `${remNum}/${totalDen}`
+                };
+            } else {
+                return {
+                    html: `${whole}<span class="frac"><span class="num">${remNum}</span><span class="den">${totalDen}</span></span>`,
+                    text: `${whole} ${remNum}/${totalDen}`
+                };
+            }
+        }
+
+        function toggleFractionInputs() {
+            if (ui.inputType.value === 'fraction') {
+                ui.fractionInputs.classList.remove('hidden');
+                ui.fractionInputs.classList.add('flex');
+            } else {
+                ui.fractionInputs.classList.add('hidden');
+                ui.fractionInputs.classList.remove('flex');
+            }
+        }
+
+        function adjustLength(delta) {
+            playSound('click');
+            let val = parseFloat(ui.inputLength.value) || 0;
+            val += delta;
+            val = Math.round(val * 100) / 100;
+            if (val <= 0) val = 0.01;
+            ui.inputLength.value = val;
+        }
+
+        function adjustFraction(type, delta) {
+            playSound('click');
+            const inputEl = type === 'num' ? ui.inputNum : ui.inputDen;
+            let val = parseInt(inputEl.value) || 1;
+            val += delta;
+            if (val < 1) val = 1;
+            inputEl.value = val;
+        }
+
+        function getNextColor() {
+            const color = state.colors[state.colorIndex];
+            state.colorIndex = (state.colorIndex + 1) % state.colors.length;
+            return color;
+        }
+
+        // 新增：處理鍵盤貼上圖片
+        function handlePasteImage(event) {
+            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.type.indexOf('image') !== -1) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        analyzeAndGenerateGeometries(e.target.result);
+                    };
+                    reader.readAsDataURL(blob);
+                    break;
+                }
+            }
+        }
+
+        // 新增：處理圖片上載
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                analyzeAndGenerateGeometries(e.target.result);
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // Reset input
+        }
+
+        // AI 智能分析圖像幾何結構並創建原生線段
+        async function analyzeAndGenerateGeometries(base64Image) {
+            playSound('gen');
+            const btnText = document.getElementById('upload-btn-text');
+            if (btnText) btnText.innerText = "AI 極速分析結構中...";
+
+            try {
+                // 去除 base64 前綴
+                const base64Data = base64Image.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
+
+                const prompt = `分析這張圖片中的圓弧和幾何線段結構。
+請計算或估算圖像中構成輪廓的主要圓弧線段。
+例如對於 S 型陰影（大半圓加上兩個相反方向的小半圓）：
+請輸出一個 JSON 陣列，每個元素代表一個構成該圖像輪廓的標準幾何線段元件：
+Properties per element:
+- radius: 半徑數值 (例如 7 或 3.5)
+- fraction: 圓弧比例 (1代表整圓, 0.5代表半圓, 0.25代表1/4圓)
+- isLine: 是否為直線 (true/false)
+- lengthVal: 如果是直線，其長度數值
+- offsetX: 相對整體中心的 X 軸偏移倍數 (以第一個半徑為單位，例如 0, 0.5, -0.5)
+- offsetY: 相對整體中心的 Y 軸偏移倍數
+- rotation: 旋轉角度 (0, 90, 180, 270)
+
+只輸出純 JSON Array 格式，不要包含 Markdown markup。`;
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: "image/png",
+                                        data: base64Data
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                let jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (jsonText) {
+                    const parsedComponents = JSON.parse(jsonText);
+                    createNativeShapesFromAI(parsedComponents);
+                } else {
+                    fallbackSimpleScurve();
+                }
+            } catch (err) {
+                console.log("AI analysis failed, fallback to default smart preset", err);
+                fallbackSimpleScurve();
+            } finally {
+                if (btnText) btnText.innerText = "上載／貼上圖形圖片";
+            }
+        }
+
+        // 將 AI 分析結果轉化為標準的 Canvas 原生幾何形狀
+        function createNativeShapesFromAI(components) {
+            const rect = ui.svgArea.getBoundingClientRect();
+            const centerWorld = getScreenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            const unit = ui.inputUnit.value;
+
+            if (!Array.isArray(components) || components.length === 0) {
+                fallbackSimpleScurve();
+                return;
+            }
+
+            // 預設參考半徑
+            const defaultR = parseFloat(ui.inputLength.value) / 2 || 3.5;
+
+            components.forEach((comp, idx) => {
+                const r = comp.radius || defaultR;
+                const visualR = getVisualRadius(r);
+                const offsetX = (comp.offsetX || 0) * visualR;
+                const offsetY = (comp.offsetY || 0) * visualR;
+
+                let num = 1, den = 1;
+                if (comp.fraction === 0.5) { num = 1; den = 2; }
+                else if (comp.fraction === 0.25) { num = 1; den = 4; }
+
+                const shape = {
+                    id: (Date.now() + idx).toString(),
+                    r: r,
+                    unit: unit,
+                    fraction: comp.fraction || 0.5,
+                    num: num,
+                    den: den,
+                    cx: centerWorld.x + offsetX,
+                    cy: centerWorld.y + offsetY,
+                    rotation: comp.rotation || 0,
+                    color: getNextColor(),
+                    isLine: !!comp.isLine,
+                    lengthVal: comp.lengthVal || (r * 2)
+                };
+                state.shapes.push(shape);
+            });
+
+            state.showSegmentLengths = true;
+            const btn = document.getElementById('btn-show-segment-lengths');
+            if (btn) btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+
+            selectShape(null);
+            renderCanvas();
+            fitAllShapesToView();
+        }
+
+        // 當圖形較大時，自動重設視角縮放居中
+        function fitAllShapesToView() {
+            if (state.shapes.length === 0) return;
+            const rect = ui.svgArea.getBoundingClientRect();
+            let maxRadius = Math.max(...state.shapes.map(s => s.r));
+            
+            if (maxRadius > 15) {
+                viewport.scale = Math.max(0.4, 15 / maxRadius);
+            } else {
+                viewport.scale = 1;
+            }
+            viewport.x = rect.width / 2;
+            viewport.y = rect.height / 2;
+            updateViewport();
+        }
+
+        // 後備方案：自動組合 S 型太極圖形（大半圓 1 個 + 反向小半圓 2 個）
+        function fallbackSimpleScurve() {
+            const rect = ui.svgArea.getBoundingClientRect();
+            const centerWorld = getScreenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            const unit = ui.inputUnit.value;
+            
+            const rBig = parseFloat(ui.inputLength.value) || 7;
+            const rSmall = rBig / 2;
+
+            const visualRSmall = getVisualRadius(rSmall);
+
+            // 1. 上方大半圓
+            const shape1 = {
+                id: Date.now().toString(),
+                r: rBig,
+                unit: unit,
+                fraction: 0.5,
+                num: 1, den: 2,
+                cx: centerWorld.x,
+                cy: centerWorld.y,
+                rotation: 180,
+                color: getNextColor(),
+                isLine: false,
+                lengthVal: rBig * 2
+            };
+
+            // 2. 右側小半圓 (弧朝上)
+            const shape2 = {
+                id: (Date.now() + 1).toString(),
+                r: rSmall,
+                unit: unit,
+                fraction: 0.5,
+                num: 1, den: 2,
+                cx: centerWorld.x + visualRSmall,
+                cy: centerWorld.y,
+                rotation: 180,
+                color: getNextColor(),
+                isLine: false,
+                lengthVal: rSmall * 2
+            };
+
+            // 3. 左側小半圓 (弧朝下)
+            const shape3 = {
+                id: (Date.now() + 2).toString(),
+                r: rSmall,
+                unit: unit,
+                fraction: 0.5,
+                num: 1, den: 2,
+                cx: centerWorld.x - visualRSmall,
+                cy: centerWorld.y,
+                rotation: 0,
+                color: getNextColor(),
+                isLine: false,
+                lengthVal: rSmall * 2
+            };
+
+            state.shapes.push(shape1, shape2, shape3);
+            state.showSegmentLengths = true;
+            
+            const btn = document.getElementById('btn-show-segment-lengths');
+            if (btn) btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+
+            selectShape(null);
+            renderCanvas();
+            fitAllShapesToView();
+        }
+
+        function generateShape() {
+            playSound('gen');
+            let lengthVal = parseFloat(ui.inputLength.value) || 5;
+            let radius = state.mode === 'radius' ? lengthVal : lengthVal / 2;
+            
+            let type = ui.inputType.value;
+            let unit = ui.inputUnit.value;
+            let isLine = (type === 'hline' || type === 'vline' || type === 'line');
+            let initialRotation = (type === 'vline') ? 90 : 0;
+            let fraction = 1;
+            let num = 1;
+            let den = 1;
+            
+            if (type === 'half') {
+                fraction = 0.5;
+                num = 1;
+                den = 2;
+            } else if (type === 'quarter') {
+                fraction = 0.25;
+                num = 1;
+                den = 4;
+            } else if (type === 'fraction') {
+                num = parseInt(ui.inputNum.value) || 1;
+                den = parseInt(ui.inputDen.value) || 1;
+                if (den === 0) den = 1;
+                fraction = num / den;
+            }
+
+            if (fraction > 1) { fraction = 1; num = 1; den = 1; }
+            if (fraction <= 0) { fraction = 0.1; num = 1; den = 10; }
+
+            // 計算目前畫布視角的「正中心」對應的真實世界座標
+            const rect = ui.svgArea.getBoundingClientRect();
+            const centerWorld = getScreenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+            // 在畫面正中心加上一點點隨機偏移，避免圖形完全重疊
+            const cx = centerWorld.x + (Math.random() * 40 - 20); 
+            const cy = centerWorld.y + (Math.random() * 40 - 20);
+
+            const newShape = {
+                id: Date.now().toString(),
+                r: radius,
+                unit: unit,
+                fraction: fraction,
+                num: num,
+                den: den,
+                cx: cx,
+                cy: cy,
+                rotation: initialRotation,
+                color: getNextColor(),
+                isLine: isLine,
+                lengthVal: lengthVal
+            };
+
+            state.shapes.push(newShape);
+            selectShape(null);
+            renderCanvas();
+        }
+
+        // --- 互動邏輯 ---
+        function selectShape(id) {
+            state.selectedId = id;
+            updateFloatingPopup();
+            renderCanvas(); 
+        }
+
+        function toggleSegmentLengths() {
+            playSound('click');
+            state.showSegmentLengths = !state.showSegmentLengths;
+            const btn = document.getElementById('btn-show-segment-lengths');
+            if (state.showSegmentLengths) {
+                btn.classList.add('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                btn.classList.remove('bg-white/90', 'border-slate-200', 'text-slate-600');
+            } else {
+                btn.classList.remove('bg-indigo-50', 'border-indigo-300', 'text-indigo-700');
+                btn.classList.add('bg-white/90', 'border-slate-200', 'text-slate-600');
+            }
+            renderCanvas();
+        }
+
+        function deleteAll() {
+            if (state.shapes.length === 0) return;
+            playSound('delete');
+            state.shapes = [];
+            selectShape(null);
+            renderCanvas();
+        }
+
+        function rotateSelected(direction) {
+            if (!state.selectedId) return;
+            playSound('click');
+            const shape = state.shapes.find(s => s.id === state.selectedId);
+            if (shape) {
+                shape.rotation = (shape.rotation + 90 * direction) % 360;
+                renderCanvas();
+            }
+        }
+
+        function deleteSelected() {
+            if (!state.selectedId) return;
+            playSound('delete');
+            state.shapes = state.shapes.filter(s => s.id !== state.selectedId);
+            selectShape(null);
+        }
+
+        function updateFloatingPopup() {
+            if (!state.selectedId) {
+                ui.floatingPopup.classList.add('hidden', 'opacity-0');
+                ui.floatingPopup.classList.remove('opacity-100');
+                return;
+            }
+
+            const shape = state.shapes.find(s => s.id === state.selectedId);
+            if (!shape) return;
+
+            ui.floatingPopup.classList.remove('hidden');
+            setTimeout(() => {
+                ui.floatingPopup.classList.remove('opacity-0');
+                ui.floatingPopup.classList.add('opacity-100');
+            }, 10);
+
+            ui.popupColor.style.backgroundColor = shape.color;
+
+            const rRow = document.getElementById('popup-r-row');
+            const dRow = document.getElementById('popup-d-row');
+            const lineTitle = document.getElementById('popup-line-title');
+
+            if (shape.isLine) {
+                rRow.style.display = 'none';
+                dRow.style.display = 'none';
+                lineTitle.innerText = "直線線段長度:";
+                ui.popupFormula.innerHTML = `${shape.lengthVal} <span class="text-xs ml-1">${shape.unit}</span>`;
+            } else if (shape.isCustomImage) {
+                rRow.style.display = 'none';
+                dRow.style.display = 'none';
+                lineTitle.innerText = "上載圖形提取線段長度:";
+                ui.popupFormula.innerHTML = `約 ${shape.lengthVal} <span class="text-xs ml-1">${shape.unit}</span>`;
+            } else {
+                rRow.style.display = 'flex';
+                dRow.style.display = 'flex';
+                lineTitle.innerText = "圓周線條長度:";
+                ui.popupR.innerText = `${shape.r} ${shape.unit}`;
+                ui.popupD.innerText = `${shape.r * 2} ${shape.unit}`;
+
+                const d = shape.r * 2;
+                const piStr = state.piMode === '22/7' ? '<span class="frac"><span class="num">22</span><span class="den">7</span></span>' : '3.14';
+                
+                let resultDisplay = '';
+                if (state.piMode === '22/7') {
+                    const fracRes = calculateExactFractionLength(d, shape.num, shape.den);
+                    resultDisplay = fracRes.html;
+                } else {
+                    const rawResult = d * 3.14 * shape.fraction;
+                    resultDisplay = parseFloat((Math.round(rawResult * 100) / 100).toFixed(2));
+                }
+                
+                if (shape.fraction === 1) {
+                    ui.popupFormula.innerHTML = `${d} × ${piStr} = ${resultDisplay} <span class="text-xs ml-1">${shape.unit}</span>`;
+                } else {
+                    const fracHTML = `<span class="frac"><span class="num">${shape.num}</span><span class="den">${shape.den}</span></span>`;
+                    ui.popupFormula.innerHTML = `${d} × ${piStr} × ${fracHTML} = ${resultDisplay} <span class="text-xs ml-1">${shape.unit}</span>`;
+                }
+            }
+
+            positionPopup(shape);
+        }
+
+        function positionPopup(shape) {
+            if (!ui.floatingPopup || ui.floatingPopup.classList.contains('hidden')) return;
+            const visualR = getVisualRadius(shape.r);
+            
+            const screenX = shape.cx * viewport.scale + viewport.x;
+            const screenY = (shape.cy - visualR) * viewport.scale + viewport.y;
+            
+            ui.floatingPopup.style.left = `${screenX}px`;
+            ui.floatingPopup.style.top = `${screenY}px`;
+            
+            ui.floatingPopup.style.transform = `translate(-50%, -100%) scale(${Math.min(1.1, Math.max(0.9, viewport.scale))})`;
+        }
+
+        // --- 拖曳與磁吸邏輯 ---
+        function getTouchesDistance(t1, t2) {
+            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+        function getTouchesCenter(t1, t2) {
+            return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+        }
+
+        function handlePointerDown(e) {
+            if (e.touches && e.touches.length === 2) {
+                e.preventDefault();
+                pinchState.isPinching = true;
+                pinchState.initialDist = getTouchesDistance(e.touches[0], e.touches[1]);
+                pinchState.initialScale = viewport.scale;
+                const center = getTouchesCenter(e.touches[0], e.touches[1]);
+                pinchState.centerX = center.x;
+                pinchState.centerY = center.y;
+                return;
+            }
+
+            const isTouch = e.touches && e.touches.length > 0;
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            panState.isPanning = true;
+            panState.startX = clientX;
+            panState.startY = clientY;
+            panState.initialVx = viewport.x;
+            panState.initialVy = viewport.y;
+        }
+
+        function startDrag(e, shapeId) {
+            e.stopPropagation();
+            playSound('click');
+
+            const isTouch = e.touches && e.touches.length > 0;
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            const worldPt = getScreenToWorld(clientX, clientY);
+            const shape = state.shapes.find(s => s.id === shapeId);
+            if (!shape) return;
+
+            dragState.isDragging = true;
+            dragState.hasMoved = false;
+            dragState.wasSelected = (state.selectedId === shapeId);
+            dragState.popupWasVisible = (!ui.floatingPopup.classList.contains('hidden'));
+            dragState.shapeId = shapeId;
+            dragState.offsetX = worldPt.x - shape.cx;
+            dragState.offsetY = worldPt.y - shape.cy;
+            dragState.startX = clientX;
+            dragState.startY = clientY;
+
+            selectShape(shapeId);
+            ui.floatingPopup.classList.add('hidden', 'opacity-0');
+        }
+
+        function handlePointerMove(e) {
+            if (pinchState.isPinching && e.touches && e.touches.length === 2) {
+                e.preventDefault();
+                const dist = getTouchesDistance(e.touches[0], e.touches[1]);
+                const delta = dist / pinchState.initialDist;
+                let newScale = pinchState.initialScale * delta;
+                newScale = Math.max(0.3, Math.min(newScale, 4));
+
+                const center = getTouchesCenter(e.touches[0], e.touches[1]);
+                viewport.x = center.x - (center.x - viewport.x) * (newScale / viewport.scale);
+                viewport.y = center.y - (center.y - viewport.y) * (newScale / viewport.scale);
+                viewport.scale = newScale;
+                updateViewport();
+                return;
+            }
+
+            const isTouch = e.touches && e.touches.length > 0;
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            if (panState.isPanning) {
+                viewport.x = panState.initialVx + (clientX - panState.startX);
+                viewport.y = panState.initialVy + (clientY - panState.startY);
+                updateViewport();
+                return;
+            }
+
+            if (dragState.isDragging) {
+                if (Math.hypot(clientX - dragState.startX, clientY - dragState.startY) > 5) {
+                    dragState.hasMoved = true;
+                }
+
+                const worldPt = getScreenToWorld(clientX, clientY);
+                const shape = state.shapes.find(s => s.id === dragState.shapeId);
+                if (!shape) return;
+
+                let rawCx = worldPt.x - dragState.offsetX;
+                let rawCy = worldPt.y - dragState.offsetY;
+
+                let snapped = false;
+                let snapShiftX = 0;
+                let snapShiftY = 0;
+                let minDist = SNAP_DISTANCE / viewport.scale;
+                let targetSnapPt = null;
+
+                const currentSnapPts = getSnapPoints({ ...shape, cx: rawCx, cy: rawCy });
+                const otherShapes = state.shapes.filter(s => s.id !== shape.id);
+
+                for (const other of otherShapes) {
+                    const otherSnapPts = getSnapPoints(other);
+                    for (const ptA of currentSnapPts) {
+                        for (const ptB of otherSnapPts) {
+                            const d = Math.hypot(ptA.x - ptB.x, ptA.y - ptB.y);
+                            if (d < minDist) {
+                                minDist = d;
+                                snapShiftX = ptB.x - ptA.x;
+                                snapShiftY = ptB.y - ptA.y;
+                                targetSnapPt = ptB;
+                                snapped = true;
+                            }
+                        }
+                    }
+                }
+
+                if (snapped) {
+                    shape.cx = rawCx + snapShiftX;
+                    shape.cy = rawCy + snapShiftY;
+
+                    const screenSnapX = targetSnapPt.x * viewport.scale + viewport.x;
+                    const screenSnapY = targetSnapPt.y * viewport.scale + viewport.y;
+
+                    ui.snapIndicator.style.left = `${screenSnapX}px`;
+                    ui.snapIndicator.style.top = `${screenSnapY}px`;
+                    ui.snapIndicator.classList.remove('hidden');
+                } else {
+                    shape.cx = rawCx;
+                    shape.cy = rawCy;
+                    ui.snapIndicator.classList.add('hidden');
+                }
+
+                updateShapePositionInDOM(shape);
+                positionPopup(shape);
+            }
+        }
+
+        function handlePointerUp(e) {
+            if (pinchState.isPinching) {
+                pinchState.isPinching = false;
+            }
+            if (panState.isPanning) {
+                panState.isPanning = false;
+            }
+            if (dragState.isDragging) {
+                if (!dragState.hasMoved) {
+                    if (dragState.wasSelected && dragState.popupWasVisible) {
+                        selectShape(null);
+                    } else {
+                        updateFloatingPopup();
+                    }
+                }
+                dragState.isDragging = false;
+                dragState.shapeId = null;
+                ui.snapIndicator.classList.add('hidden');
+                renderCanvas(); 
+            }
+        }
+
+        function getSnapPoints(shape) {
+            const visualR = getVisualRadius(shape.r);
+            const pts = [];
+            
+            pts.push({ x: shape.cx, y: shape.cy });
+
+            const rad = shape.rotation * Math.PI / 180;
+            
+            if (shape.isLine) {
+                const halfLen = getVisualRadius(shape.lengthVal) / 2;
+                pts.push({
+                    x: shape.cx + halfLen * Math.cos(rad),
+                    y: shape.cy + halfLen * Math.sin(rad)
+                });
+                pts.push({
+                    x: shape.cx - halfLen * Math.cos(rad),
+                    y: shape.cy - halfLen * Math.sin(rad)
+                });
+            } else if (shape.fraction === 1) {
+                pts.push({ x: shape.cx + visualR * Math.cos(rad), y: shape.cy + visualR * Math.sin(rad) });
+                pts.push({ x: shape.cx + visualR * Math.cos(rad + Math.PI/2), y: shape.cy + visualR * Math.sin(rad + Math.PI/2) });
+                pts.push({ x: shape.cx + visualR * Math.cos(rad + Math.PI), y: shape.cy + visualR * Math.sin(rad + Math.PI) });
+                pts.push({ x: shape.cx + visualR * Math.cos(rad + Math.PI*1.5), y: shape.cy + visualR * Math.sin(rad + Math.PI*1.5) });
+            } else {
+                pts.push({
+                    x: shape.cx + visualR * Math.cos(rad),
+                    y: shape.cy + visualR * Math.sin(rad)
+                });
+                const endRad = rad + shape.fraction * 2 * Math.PI;
+                pts.push({
+                    x: shape.cx + visualR * Math.cos(endRad),
+                    y: shape.cy + visualR * Math.sin(endRad)
+                });
+            }
+            return pts;
+        }
+
+        function updateShapePositionInDOM(shape) {
+            const g = document.getElementById(`shape-${shape.id}`);
+            if (g) {
+                g.setAttribute('transform', `translate(${shape.cx}, ${shape.cy}) rotate(${shape.rotation})`);
+            }
+        }
+
+        function renderCanvas() {
+            ui.shapesGroup.innerHTML = '';
+
+            if (state.shapes.length === 0) {
+                ui.watermark.classList.remove('opacity-0');
+                ui.watermark.classList.add('opacity-100');
+            } else {
+                ui.watermark.classList.add('opacity-0');
+                ui.watermark.classList.remove('opacity-100');
+            }
+
+            const sortedShapes = [...state.shapes].sort((a, b) => {
+                if (a.id === state.selectedId) return 1;
+                if (b.id === state.selectedId) return -1;
+                return 0;
+            });
+
+            sortedShapes.forEach(shape => {
+                const isSelected = (shape.id === state.selectedId);
+                const visualR = getVisualRadius(shape.r);
+                
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.id = `shape-${shape.id}`;
+                g.setAttribute('transform', `translate(${shape.cx}, ${shape.cy}) rotate(${shape.rotation})`);
+                g.style.cursor = isSelected ? 'grab' : 'pointer';
+                
+                g.onmousedown = (e) => startDrag(e, shape.id);
+                g.ontouchstart = (e) => startDrag(e, shape.id);
+
+                if (isSelected) {
+                    if (shape.isLine) {
+                        const visualLen = getVisualRadius(shape.lengthVal);
+                        const filterGlow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        filterGlow.setAttribute('x1', -visualLen / 2);
+                        filterGlow.setAttribute('y1', 0);
+                        filterGlow.setAttribute('x2', visualLen / 2);
+                        filterGlow.setAttribute('y2', 0);
+                        filterGlow.setAttribute('stroke', '#cbd5e1');
+                        filterGlow.setAttribute('stroke-width', '16');
+                        filterGlow.setAttribute('stroke-linecap', 'round');
+                        filterGlow.setAttribute('stroke-dasharray', '4,4');
+                        g.appendChild(filterGlow);
+                    } else {
+                        // 1. 灰色虛線全圓外框
+                        const fullCircleOutline = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        fullCircleOutline.setAttribute('r', visualR);
+                        fullCircleOutline.setAttribute('fill', 'none');
+                        fullCircleOutline.setAttribute('stroke', '#94a3b8');
+                        fullCircleOutline.setAttribute('stroke-width', '2');
+                        fullCircleOutline.setAttribute('stroke-dasharray', '4,4');
+                        g.appendChild(fullCircleOutline);
+
+                        // 2. 實體直徑線段
+                        const diamGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        
+                        // 直徑橫線
+                        const dLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        dLine.setAttribute('x1', -visualR);
+                        dLine.setAttribute('y1', 0);
+                        dLine.setAttribute('x2', visualR);
+                        dLine.setAttribute('y2', 0);
+                        dLine.setAttribute('stroke', shape.color);
+                        dLine.setAttribute('stroke-width', '2.5');
+                        diamGroup.appendChild(dLine);
+
+                        // 左端 Tick 標記
+                        const tick1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        tick1.setAttribute('x1', -visualR); tick1.setAttribute('y1', -6);
+                        tick1.setAttribute('x2', -visualR); tick1.setAttribute('y2', 6);
+                        tick1.setAttribute('stroke', shape.color);
+                        tick1.setAttribute('stroke-width', '2.5');
+                        diamGroup.appendChild(tick1);
+
+                        // 右端 Tick 標記
+                        const tick2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        tick2.setAttribute('x1', visualR); tick2.setAttribute('y1', -6);
+                        tick2.setAttribute('x2', visualR); tick2.setAttribute('y2', 6);
+                        tick2.setAttribute('stroke', shape.color);
+                        tick2.setAttribute('stroke-width', '2.5');
+                        diamGroup.appendChild(tick2);
+
+                        // 直徑標籤：顯示在直徑橫線上方 (y = -10)
+                        const dText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        dText.setAttribute('x', '0');
+                        dText.setAttribute('y', '-10');
+                        dText.setAttribute('text-anchor', 'middle');
+                        dText.setAttribute('fill', shape.color);
+                        dText.setAttribute('font-weight', '800');
+                        dText.setAttribute('font-size', `${20 / viewport.scale}px`);
+                        dText.setAttribute('style', 'text-shadow: 0px 0px 4px white, 0px 0px 4px white;');
+                        dText.setAttribute('transform', `rotate(${-shape.rotation || 0}, 0, -10)`);
+                        dText.textContent = `${shape.r * 2} ${shape.unit}`;
+                        diamGroup.appendChild(dText);
+
+                        g.appendChild(diamGroup);
+                    }
+                }
+
+                const fillColor = 'transparent';
+                
+                if (shape.isCustomImage && shape.points) {
+                    // 繪製上載圖片解析出之輪廓點集線段
+                    const pathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    shape.points.forEach(pt => {
+                        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        dot.setAttribute('cx', pt.x);
+                        dot.setAttribute('cy', pt.y);
+                        dot.setAttribute('r', '2.5');
+                        dot.setAttribute('fill', shape.color);
+                        pathGroup.appendChild(dot);
+                    });
+                    g.appendChild(pathGroup);
+                } else if (shape.isLine) {
+                    const visualLen = getVisualRadius(shape.lengthVal);
+                    
+                    const touchArea = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    touchArea.setAttribute('x1', -visualLen / 2);
+                    touchArea.setAttribute('y1', 0);
+                    touchArea.setAttribute('x2', visualLen / 2);
+                    touchArea.setAttribute('y2', 0);
+                    touchArea.setAttribute('stroke', 'transparent');
+                    touchArea.setAttribute('stroke-width', '24');
+                    touchArea.setAttribute('stroke-linecap', 'round');
+                    g.appendChild(touchArea);
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', -visualLen / 2);
+                    line.setAttribute('y1', 0);
+                    line.setAttribute('x2', visualLen / 2);
+                    line.setAttribute('y2', 0);
+                    line.setAttribute('stroke', shape.color);
+                    line.setAttribute('stroke-width', '5');
+                    line.setAttribute('stroke-linecap', 'round');
+                    g.appendChild(line);
+                    
+                } else if (shape.fraction === 1) {
+                    // 隱形觸控點擊寬邊界 (防止圖層遮擋內部)
+                    const touchCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    touchCircle.setAttribute('r', visualR);
+                    touchCircle.setAttribute('fill', 'none');
+                    touchCircle.setAttribute('stroke', 'transparent');
+                    touchCircle.setAttribute('stroke-width', '24');
+                    g.appendChild(touchCircle);
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('r', visualR);
+                    circle.setAttribute('fill', fillColor);
+                    circle.setAttribute('stroke', shape.color);
+                    circle.setAttribute('stroke-width', '4');
+                    g.appendChild(circle);
+                } else {
+                    const angle = shape.fraction * 2 * Math.PI;
+                    const largeArc = shape.fraction > 0.5 ? 1 : 0;
+                    const endX = visualR * Math.cos(angle);
+                    const endY = visualR * Math.sin(angle);
+                    const arcPathString = `M ${visualR} 0 A ${visualR} ${visualR} 0 ${largeArc} 1 ${endX} ${endY}`;
+                    
+                    // 1. 隱形觸控點擊寬邊界 (24px 寬，只在弧線上，不佔據圓心區域，徹底解決圖層遮擋)
+                    const touchArc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    touchArc.setAttribute('d', arcPathString);
+                    touchArc.setAttribute('fill', 'none');
+                    touchArc.setAttribute('stroke', 'transparent');
+                    touchArc.setAttribute('stroke-width', '24');
+                    touchArc.setAttribute('stroke-linecap', 'round');
+                    g.appendChild(touchArc);
+
+                    // 2. 實體弧線
+                    const arcLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    arcLine.setAttribute('d', arcPathString);
+                    arcLine.setAttribute('fill', 'none');
+                    arcLine.setAttribute('stroke', shape.color);
+                    arcLine.setAttribute('stroke-width', '5');
+                    arcLine.setAttribute('stroke-linecap', 'round');
+                    g.appendChild(arcLine);
+                }
+
+                // 顯示長度標籤（選取時，或者按下「顯示各線段長度」時）
+                if (isSelected || state.showSegmentLengths) {
+                    let labelX = 0;
+                    let labelY = 22;
+
+                    if (shape.isLine) {
+                        labelX = 0;
+                        labelY = 22;
+                    } else if (shape.isCustomImage) {
+                        labelX = 0;
+                        labelY = 22;
+                    } else if (shape.fraction === 1) {
+                        labelX = 0;
+                        labelY = visualR + 22;
+                    } else {
+                        // 計算弧線中點座標 (Mid-arc point)，讓長度標籤精確顯示在弧線頂部/中段外側
+                        const midAngle = (shape.fraction * Math.PI);
+                        const labelR = visualR + 18;
+                        labelX = labelR * Math.cos(midAngle);
+                        labelY = labelR * Math.sin(midAngle);
+                    }
+
+                    // 使用 foreignObject 支援 HTML 上下分數排版
+                    const foWidth = 200;
+                    const foHeight = 60;
+                    const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+                    fo.setAttribute('x', (labelX - foWidth / 2).toString());
+                    fo.setAttribute('y', (labelY - foHeight / 2).toString());
+                    fo.setAttribute('width', foWidth.toString());
+                    fo.setAttribute('height', foHeight.toString());
+                    fo.setAttribute('transform', `rotate(${-shape.rotation || 0}, ${labelX}, ${labelY})`);
+                    fo.style.pointerEvents = 'none';
+
+                    const div = document.createElement('div');
+                    div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+                    div.style.width = '100%';
+                    div.style.height = '100%';
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.justifyContent = 'center';
+                    div.style.color = shape.color;
+                    div.style.fontWeight = '800';
+                    div.style.fontSize = `${20 / viewport.scale}px`;
+                    div.style.textShadow = '0px 0px 4px white, 0px 0px 4px white, 0px 0px 4px white';
+                    
+                    let contentHtml = '';
+                    if (shape.isLine) {
+                        contentHtml = `${shape.lengthVal} <span style="font-size:0.7em; margin-left:4px;">${shape.unit}</span>`;
+                    } else if (shape.isCustomImage) {
+                        contentHtml = `~${shape.lengthVal} <span style="font-size:0.7em; margin-left:4px;">${shape.unit}</span>`;
+                    } else {
+                        const d = shape.r * 2;
+                        if (state.piMode === '22/7') {
+                            const fracRes = calculateExactFractionLength(d, shape.num, shape.den);
+                            // 直接使用 fracRes.html (包含上下分數的 HTML 標籤)
+                            contentHtml = `${fracRes.html} <span style="font-size:0.7em; margin-left:4px;">${shape.unit}</span>`;
+                        } else {
+                            const rawLength = d * 3.14 * shape.fraction;
+                            const lenStr = parseFloat((Math.round(rawLength * 100) / 100).toFixed(2));
+                            contentHtml = `${lenStr} <span style="font-size:0.7em; margin-left:4px;">${shape.unit}</span>`;
+                        }
+                    }
+                    
+                    div.innerHTML = contentHtml;
+                    fo.appendChild(div);
+                    g.appendChild(fo);
+                }
+
+                ui.shapesGroup.appendChild(g);
+            });
+        }
+
+        init();
+</script>
+</html>
